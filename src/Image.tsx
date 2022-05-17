@@ -24,6 +24,8 @@ interface ImageProps {
   uri: string;
   transitionDuration?: number;
   tint?: "dark" | "light";
+  onLoad: () => void;
+  onLoadEnd: () => void;
   onError: (error: { nativeEvent: { error: Error } }) => void;
 }
 
@@ -38,6 +40,8 @@ export default class Image extends React.Component<ImageProps, ImageState> {
   static defaultProps = {
     transitionDuration: 300,
     tint: "dark",
+    onLoad: () => {},
+    onLoadEnd: () => {},
     onError: () => {}
   };
 
@@ -69,12 +73,16 @@ export default class Image extends React.Component<ImageProps, ImageState> {
   }
 
   async load({ uri, options = {}, onError }: ImageProps): Promise<void> {
+    const { onLoad, onLoadEnd } = this.props;
+    onLoad();
     if (uri) {
       try {
         const path = await CacheManager.get(uri, options).getPath();
         if (this.mounted) {
           if (path) {
-            this.setState({ uri: path });
+            this.setState({ uri: path }, () => {
+              onLoadEnd();
+            });
           } else {
             onError({ nativeEvent: { error: new Error("Could not load image") } });
           }
